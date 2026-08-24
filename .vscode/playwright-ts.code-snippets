@@ -1,0 +1,85 @@
+﻿{
+  "PW Locators": {
+    "prefix": "pw-locator",
+    "body": [
+      "export const ${1:Login}Locators = {",
+      "  ${2:usernameInput}: '${3:#user-name}',",
+      "  ${4:passwordInput}: '${5:#password}',",
+      "  ${6:submitButton}: '${7:#login-button}'",
+      "}"
+    ],
+    "description": "pw-locator -> estructura de locators"
+  },
+
+  "PW Page Object Model": {
+    "prefix": "pw-page",
+    "body": [
+      "import { Page, expect } from '@playwright/test'",
+      "import { ${1:Login}Locators } from '../locators/${2:login}.locators'",
+      "",
+      "export class ${1:Login}Page {",
+      "  constructor(private page: Page) {}",
+      "",
+      "  async navigate() {",
+      "    await this.page.goto('/')",
+      "  }",
+      "",
+      "  async fillUsername(username: string) {",
+      "    await this.page.fill(${1:Login}Locators.usernameInput, username)",
+      "  }",
+      "",
+      "  async fillPassword(password: string) {",
+      "    await this.page.fill(${1:Login}Locators.passwordInput, password)",
+      "  }",
+      "",
+      "  async submit() {",
+      "    await this.page.click(${1:Login}Locators.submitButton)",
+      "  }",
+      "",
+      "  async verifyLoginSuccess() {",
+      "    await expect(this.page).toHaveURL(/inventory/)",
+      "  }",
+      "}"
+    ],
+    "description": "pw-page -> clase Page Object Model"
+  },
+
+  "PW Spec": {
+    "prefix": "pw-spec",
+    "body": [
+      "import { test, expect } from '@playwright/test'",
+      "import { ${1:Login}Page } from '../pages/${2:login}.page'",
+      "",
+      "test.describe('${3:Login}', () => {",
+      "",
+      "  test('${4:should login successfully}', async ({ page }) => {",
+      "    const loginPage = new ${1:Login}Page(page)",
+      "    await loginPage.navigate()",
+      "    await loginPage.fillUsername('standard_user')",
+      "    await loginPage.fillPassword('secret_sauce')",
+      "    await loginPage.submit()",
+      "    await loginPage.verifyLoginSuccess()",
+      "  })",
+      "",
+      "})"
+    ],
+    "description": "pw-spec -> archivo de test"
+  },
+
+  "PW Utils": {
+    "prefix": "pw-utils",
+    "body": [
+      "import { Page } from '@playwright/test'",
+      "",
+      "export async function waitForElement(page: Page, selector: string) {",
+      "  await page.waitForSelector(selector, { state: 'visible' })",
+      "}",
+      "",
+      "export async function clearAndFill(page: Page, selector: string, value: string) {",
+      "  await page.fill(selector, '')",
+      "  await page.fill(selector, value)",
+      "}"
+    ],
+    "description": "pw-utils -> helpers reutilizables"
+  }
+}
