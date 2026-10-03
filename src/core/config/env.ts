@@ -34,4 +34,16 @@ export const env = {
     issueUrlTemplate: read("ISSUE_URL_TEMPLATE"),
     tmsUrlTemplate: read("TMS_URL_TEMPLATE"),
   },
+  /**
+   * QASL Manual Testing. Opcional: sin QASL_URL y QASL_TOKEN la suite corre
+   * igual y los resultados no se publican.
+   */
+  qasl: {
+    url: process.env.QASL_URL,
+    token: process.env.QASL_TOKEN,
+    project: process.env.QASL_PROJECT ?? "TIENDA",
+    plan: process.env.QASL_PLAN ?? "PLAN-01",
+    /** Pantalla de la herramienta, para el link "QASL" de cada caso en Allure. */
+    webUrl: process.env.QASL_WEB_URL ?? "http://localhost:8081",
+  },
 } as const;

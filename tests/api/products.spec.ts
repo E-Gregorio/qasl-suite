@@ -14,7 +14,7 @@ import {
   Tag,
   Test,
   TestSuite,
-  Tms,
+  TestCase,
 } from "@core/allure";
 import type { Fixtures } from "@core/fixtures/test";
 import { env } from "@core/config/env";
@@ -36,7 +36,7 @@ import {
 export class ProductsApiSuite {
   @Story("Consulta de catalogo")
   @Severity(SEVERITY.CRITICAL)
-  @Tms("TC-3001")
+  @TestCase("HU-003|TS-01|TC-01")
   @Tag("@smoke")
   @Description("Verifica el contrato del listado paginado y su tiempo de respuesta.")
   @Test("GET /products devuelve el listado paginado")
@@ -57,7 +57,7 @@ export class ProductsApiSuite {
 
   @Story("Consulta de catalogo")
   @Severity(SEVERITY.NORMAL)
-  @Tms("TC-3002")
+  @TestCase("HU-003|TS-01|TC-02")
   @Test("GET /products/:id devuelve el detalle del producto")
   async detalle({ productsApi, api }: Fixtures): Promise<void> {
     const respuesta = await productsApi.porId(IdsApi.productoExistente);
@@ -72,7 +72,7 @@ export class ProductsApiSuite {
 
   @Story("Consulta de catalogo")
   @Severity(SEVERITY.MINOR)
-  @Tms("TC-3003")
+  @TestCase("HU-003|TS-01|TC-03")
   @Test("GET /products/categories devuelve las categorias conocidas")
   async categorias({ productsApi, api }: Fixtures): Promise<void> {
     const respuesta = await productsApi.categorias();
@@ -83,7 +83,7 @@ export class ProductsApiSuite {
 
   @Story("Alta de productos")
   @Severity(SEVERITY.NORMAL)
-  @Tms("TC-3004")
+  @TestCase("HU-003|TS-02|TC-04")
   @Test("POST /products crea un producto")
   async alta({ productsApi, api }: Fixtures): Promise<void> {
     const respuesta = await productsApi.crear(productoNuevo);

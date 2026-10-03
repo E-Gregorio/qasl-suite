@@ -7,8 +7,34 @@ sin mezclarse entre sí.
 | Capa | Herramienta | Contra qué corre | Casos |
 |---|---|---|---|
 | `e2e` | Playwright | saucedemo.com | 10 |
-| `api` | Playwright (APIRequestContext) | fakestoreapi.com | 7 |
+| `api` | Playwright (APIRequestContext) | fakestoreapi.com — **no responde** (ver pendientes) | 7 |
 | `performance` | k6 | SUT demo en `localhost:4300` | 5 acuerdos de servicio |
+
+## Estado y pendientes (03/10/2026)
+
+**Funciona**
+
+- Capa `e2e` (10 casos contra saucedemo.com): pasa y publica cada resultado en
+  QASL Manual Testing, proyecto `TIENDA`.
+- `@TestCase` y el reporter de QASL: corriendo `npm test` con `QASL_URL` y
+  `QASL_TOKEN`, los resultados llegan a la herramienta como un Run y los casos
+  que fallan abren su bug.
+
+**No funciona**
+
+- **Capa `api` (7 casos):** `https://fakestoreapi.com` no responde. Los 7 tests
+  terminan por timeout (`Timeout 15000ms exceeded`) y abren los bugs BUG-001 a
+  BUG-007 en el proyecto `TIENDA`. **No son defectos del producto, son del
+  ambiente.**
+
+**Pendiente**
+
+1. Reemplazar fakestoreapi.com por una API que responda. Decidir cuál antes de
+   tocar código.
+2. Probar el workflow de GitHub Actions con el runner self-hosted. Hasta ahora
+   solo se probó la corrida local.
+3. Cuando la capa `api` pase, verificar que los bugs BUG-001 a BUG-007 se cierren
+   solos.
 
 ---
 
@@ -152,6 +178,58 @@ Detalles de implementación que conviene conocer:
 - **La firma del método se reconstruye** en tiempo de ejecución para que
   Playwright pueda inyectar los fixtures, que exige desestructuración literal
   en el primer parámetro.
+
+---
+
+## Trazabilidad con QASL Manual Testing
+
+Cada caso automatizado está atado a su caso en QASL Manual Testing con la
+referencia de NEXUS Requirements (`HU|TS|TC`):
+
+```ts
+@TestCase("HU-001|TS-01|TC-01")
+@Test("el usuario estandar accede al catalogo")
+async accesoConcedido(...) { ... }
+
+// Con @Cases, una referencia por dato y en el mismo orden
+@TestCase("HU-002|TS-02|TC-02", "HU-002|TS-02|TC-03", "HU-002|TS-02|TC-04")
+@Cases(formulariosIncompletos, ...)
+```
+
+`@TestCase` hace dos cosas:
+
+- **En Allure** agrega el link `QASL · HU-001 | TS-01 | TC-01`, que abre el
+  caso en la herramienta.
+- **En el pipeline** el reporter de QASL (`src/core/qasl/qasl-reporter.ts`)
+  publica el resultado en ese caso: verde o rojo, y si falla abre el bug con su
+  trazabilidad completa (`BUG-001 · EP-001 | HU-001 | TS-02 | TC-03`) y la
+  evidencia. Cuando el caso vuelve a pasar, el bug se cierra solo.
+
+El reporter se activa solo si existen `QASL_URL` y `QASL_TOKEN`. Sin ellas la
+suite corre igual que siempre.
+
+| Capa | Historia en QASL |
+|---|---|
+| Login (e2e) | HU-001 · 6 casos |
+| Compra (e2e) | HU-002 · 4 casos |
+| API de productos | HU-003 · 4 casos |
+| API de carritos | HU-004 · 3 casos |
+
+Las cuatro HU pertenecen a la épica EP-001 *Tienda online* del proyecto
+`TIENDA` de QASL Manual Testing.
+
+**Desde tu terminal**, con QASL Manual Testing levantado:
+
+```powershell
+$env:QASL_URL="http://localhost:4100"
+$env:QASL_TOKEN="qasl-demo-token"
+npm test
+```
+
+**Desde GitHub Actions**, el workflow `.github/workflows/qasl-suite.yml` corre
+en cada push a `main` o a mano (botón *Run workflow*, con filtro opcional como
+`@smoke`). Usa un runner self-hosted porque la herramienta está en el Docker
+local; el paso a paso para registrarlo está en el propio workflow.
 
 ---
 

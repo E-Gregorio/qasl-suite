@@ -10,6 +10,7 @@ import {
 } from "allure-js-commons";
 import { CASE_KEY, HOOK_KEY, normalizeLabels, resolveMeta } from "./metadata";
 import { getTest } from "./test-registry";
+import { qaslLink, readQaslRefs, refForVariant } from "./qasl";
 import type {
   AllureMeta,
   MethodMarkerDecorator,
@@ -364,13 +365,18 @@ function registerCase(test: any, ctor: Function, def: TestCaseDef, getInstance: 
     hasData ? 1 : 0,
   );
 
+  const qaslRefs = readQaslRefs((ctor.prototype as Record<string, unknown>)[def.method]);
+
   for (const variant of variants) {
+    const qaslRef = refForVariant(qaslRefs, variant.index, variants.length, def.method);
+
     const body = withFixtureSignature(fixtureNames, async (fixtures: any, testInfo: any) => {
       if (def.options.mode === "slow") testInfo.slow();
       if (def.options.mode === "fail") test.fail();
       if (def.options.timeout !== undefined) testInfo.setTimeout(def.options.timeout);
 
       await applyMeta(meta, variant.data, hasData);
+      if (qaslRef) await setLinks(qaslLink(qaslRef));
 
       const instance = getInstance();
       return hasData
@@ -380,9 +386,11 @@ function registerCase(test: any, ctor: Function, def: TestCaseDef, getInstance: 
 
     const details: Record<string, unknown> = {};
     if (pwTags.length) details.tag = pwTags;
-    if (def.options.reason) {
-      details.annotation = [{ type: def.options.mode ?? "note", description: def.options.reason }];
-    }
+    const annotations: { type: string; description: string }[] = [];
+    if (def.options.reason) annotations.push({ type: def.options.mode ?? "note", description: def.options.reason });
+    // El reporter de QASL publica el resultado en el caso que indica esta anotación
+    if (qaslRef) annotations.push({ type: "case", description: qaslRef });
+    if (annotations.length) details.annotation = annotations;
 
     const declare = (): void => {
       const args: any[] = Object.keys(details).length

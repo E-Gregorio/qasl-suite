@@ -14,7 +14,7 @@ import {
   Tag,
   Test,
   TestSuite,
-  Tms,
+  TestCase,
 } from "@core/allure";
 import type { Fixtures } from "@core/fixtures/test";
 import { env } from "@core/config/env";
@@ -30,7 +30,7 @@ import { IdsApi, LimitesApi, StatusEsperado, carritoNuevo } from "@data/api.data
 export class CartsApiSuite {
   @Story("Consulta de carritos")
   @Severity(SEVERITY.CRITICAL)
-  @Tms("TC-4001")
+  @TestCase("HU-004|TS-01|TC-01")
   @Tag("@smoke")
   @Description("Verifica el contrato del listado de carritos y de sus items.")
   @Test("GET /carts devuelve carritos con sus items")
@@ -47,7 +47,7 @@ export class CartsApiSuite {
 
   @Story("Consulta de carritos")
   @Severity(SEVERITY.NORMAL)
-  @Tms("TC-4002")
+  @TestCase("HU-004|TS-01|TC-02")
   @Test("GET /carts/:id devuelve el carrito solicitado")
   async detalle({ cartsApi, api }: Fixtures): Promise<void> {
     const respuesta = await cartsApi.porId(IdsApi.carritoExistente);
@@ -58,7 +58,7 @@ export class CartsApiSuite {
 
   @Story("Alta de carritos")
   @Severity(SEVERITY.NORMAL)
-  @Tms("TC-4003")
+  @TestCase("HU-004|TS-02|TC-03")
   @Test("POST /carts crea un carrito con dos productos")
   async alta({ cartsApi, api }: Fixtures): Promise<void> {
     const respuesta = await cartsApi.crear(carritoNuevo);

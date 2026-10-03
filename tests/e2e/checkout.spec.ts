@@ -15,7 +15,7 @@ import {
   Tag,
   Test,
   TestSuite,
-  Tms,
+  TestCase,
 } from "@core/allure";
 import type { Fixtures } from "@core/fixtures/test";
 import { usuarioValido } from "@data/users.data";
@@ -43,7 +43,7 @@ export class CheckoutSuite {
 
   @Story("Compra completa")
   @Severity(SEVERITY.BLOCKER)
-  @Tms("TC-2001")
+  @TestCase("HU-002|TS-01|TC-01")
   @Tag("@smoke")
   @Description("Recorrido completo: catalogo, carrito, datos del comprador, resumen y confirmacion.")
   @Test("el usuario completa una compra de dos productos")
@@ -71,7 +71,11 @@ export class CheckoutSuite {
 
   @Story("Validacion del formulario")
   @Severity(SEVERITY.NORMAL)
-  @Tms("TC-2002")
+  @TestCase(
+    "HU-002|TS-02|TC-02",
+    "HU-002|TS-02|TC-03",
+    "HU-002|TS-02|TC-04",
+  )
   @Issue("BUG-4471")
   @Cases(formulariosIncompletos, (formulario) => `rechaza el checkout ${formulario.caso}`)
   @Test()

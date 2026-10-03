@@ -14,7 +14,7 @@ import {
   Tag,
   Test,
   TestSuite,
-  Tms,
+  TestCase,
 } from "@core/allure";
 import type { Fixtures } from "@core/fixtures/test";
 import { loginsRechazados, usuarioValido, type LoginAttempt } from "@data/users.data";
@@ -34,7 +34,7 @@ export class LoginSuite {
 
   @Story("Acceso concedido")
   @Severity(SEVERITY.BLOCKER)
-  @Tms("TC-1001")
+  @TestCase("HU-001|TS-01|TC-01")
   @Tag("@smoke")
   @Description("Un usuario habilitado accede al catalogo de productos.")
   @Test("el usuario estandar accede al catalogo")
@@ -46,7 +46,13 @@ export class LoginSuite {
 
   @Story("Acceso denegado")
   @Severity(SEVERITY.CRITICAL)
-  @Tms("TC-1002")
+  @TestCase(
+    "HU-001|TS-02|TC-02",
+    "HU-001|TS-02|TC-03",
+    "HU-001|TS-02|TC-04",
+    "HU-001|TS-02|TC-05",
+    "HU-001|TS-02|TC-06",
+  )
   @Cases(loginsRechazados, (intento) => `rechaza el login: ${intento.caso}`)
   @Test()
   async accesoDenegado(intento: LoginAttempt, { loginPage }: Fixtures): Promise<void> {

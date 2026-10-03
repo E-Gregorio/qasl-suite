@@ -21,6 +21,8 @@ export default defineConfig({
         links: {
           issue: { urlTemplate: env.links.issueUrlTemplate, nameTemplate: "%s" },
           tms: { urlTemplate: env.links.tmsUrlTemplate, nameTemplate: "TC %s" },
+          // @TestCase("HU-001|TS-01|TC-01") → abre el caso en QASL Manual Testing
+          qasl: { urlTemplate: `${env.qasl.webUrl}/cases/%s?proyecto=${env.qasl.project}` },
         },
         environmentInfo: {
           Entorno: env.name,
@@ -54,6 +56,20 @@ export default defineConfig({
         ],
       },
     ],
+    // QASL Manual Testing: publica cada resultado en su caso y abre el bug si falla.
+    // Se activa solo cuando el pipeline (o tu terminal) define QASL_URL y QASL_TOKEN.
+    ...(env.qasl.url && env.qasl.token
+      ? [
+          [
+            "./src/core/qasl/qasl-reporter.ts",
+            {
+              project: env.qasl.project,
+              plan: env.qasl.plan,
+              environment: `${env.name} · saucedemo.com + fakestoreapi.com`,
+            },
+          ] as [string, Record<string, unknown>],
+        ]
+      : []),
   ],
 
   use: {

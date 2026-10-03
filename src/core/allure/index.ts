@@ -6,7 +6,7 @@
  *   import {
  *     TestSuite, Test, Cases, BeforeEach,
  *     Epic, Feature, Story, Severity, Owner, Layer, Tag,
- *     Issue, Tms, Step, SEVERITY, LAYER,
+ *     Issue, Tms, TestCase, Step, SEVERITY, LAYER,
  *   } from "@core/allure";
  */
 
@@ -32,6 +32,7 @@ export {
 } from "./labels";
 
 export { Issue, Link, Requirement, Tms } from "./links";
+export { TestCase } from "./qasl";
 
 /* Steps y adjuntos */
 export {

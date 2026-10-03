@@ -1,0 +1,89 @@
+# Pipeline de qasl-suite: corre e2e + API con Playwright, publica cada resultado en
+# QASL Manual Testing (verde/rojo por caso y bug automático si falla) y guarda el reporte de Allure.
+#
+# Corre en un runner self-hosted (tu PC), porque QASL Manual Testing está en tu Docker local
+# (http://localhost:4100) y los runners de GitHub en la nube no llegan a tu localhost.
+#
+# Requisitos, una sola vez:
+#   1. Runner registrado: Settings → Actions → Runners → New self-hosted runner.
+#   2. Secret QASL_TOKEN: Settings → Secrets and variables → Actions (valor: qasl-demo-token).
+#   3. QASL Manual Testing levantado (docker compose up -d) con el proyecto TIENDA (npm run seed).
+#   4. Java instalado, para generar el reporte de Allure.
+#
+# Seguridad: el workflow no se dispara con pull requests, así nadie puede ejecutar código en tu PC.
+
+name: qasl-suite
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      grep:
+        description: "Filtro de Playwright (por ejemplo @smoke). Vacío = todos los casos"
+        required: false
+        default: ""
+
+concurrency:
+  group: qasl-suite
+  cancel-in-progress: false
+
+jobs:
+  pruebas:
+    name: e2e + API → QASL Manual Testing
+    runs-on: self-hosted
+    timeout-minutes: 30
+    env:
+      CI: "true"
+      QASL_URL: http://localhost:4100
+      QASL_TOKEN: ${{ secrets.QASL_TOKEN }}
+      QASL_PROJECT: TIENDA
+      QASL_PLAN: PLAN-01
+      QASL_WEB_URL: http://localhost:8081
+
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Instalar Chromium de Playwright
+        run: npx playwright install chromium
+
+      - name: Variables de la suite (.env desde .env.example)
+        run: node -e "require('fs').copyFileSync('.env.example', '.env')"
+
+      - name: Verificar que QASL Manual Testing responde
+        run: node -e "fetch(process.env.QASL_URL + '/api/health').then(r => { if (!r.ok) throw new Error(r.status); console.log('QASL Manual Testing OK'); }).catch(e => { console.error('No responde ' + process.env.QASL_URL + '. Levantalo con docker compose up -d.'); process.exit(1); })"
+
+      - name: Ejecutar pruebas y publicar en QASL
+        run: |
+          node scripts/allure.mjs clean:results
+          npx playwright test ${{ github.event.inputs.grep && format('--grep "{0}"', github.event.inputs.grep) || '' }}
+
+      - name: Generar reporte de Allure
+        if: always()
+        run: npm run allure:generate
+
+      - name: Guardar reporte de Allure
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report/
+          retention-days: 14
+
+      - name: Guardar evidencia de las fallas
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-results/
+          retention-days: 7
