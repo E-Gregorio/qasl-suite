@@ -91,6 +91,8 @@ export type {
 export {
   attachment,
   attachmentPath,
+  description as allureDescription,
+  descriptionHtml as allureDescriptionHtml,
   logStep,
   parameter as allureParameter,
   step as allureStep,

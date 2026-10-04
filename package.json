@@ -1,7 +1,7 @@
 {
   "name": "qasl-suite",
   "version": "1.0.0",
-  "description": "Suite E2E + API con reporte Allure unificado",
+  "description": "Suite e2e, API, seguridad y rendimiento con un solo reporte de Allure",
   "main": "index.js",
   "directories": {
     "test": "tests"
@@ -13,15 +13,19 @@
     "test:e2e": "playwright test --project=e2e-chromium",
     "pretest:api": "node scripts/allure.mjs clean:results",
     "test:api": "playwright test --project=api",
+    "pretest:seguridad": "node scripts/allure.mjs clean:results",
+    "test:seguridad": "playwright test --project=seguridad",
     "pretest:smoke": "node scripts/allure.mjs clean:results",
     "test:smoke": "playwright test --grep @smoke",
     "test:headed": "playwright test --project=e2e-chromium --headed",
     "allure:generate": "node scripts/allure.mjs history:restore && allure generate allure-results --clean -o allure-report && node scripts/allure.mjs history:save",
+    "qasl:allure": "node scripts/qasl-allure.mjs",
     "allure:open": "allure open allure-report",
     "report": "npm run allure:generate && npm run allure:open",
     "clean": "node scripts/allure.mjs clean",
     "typecheck": "tsc --noEmit",
     "perf:sut": "node k6/sut-demo/servidor.js",
+    "perf": "node scripts/rendimiento.mjs",
     "perf:smoke": "k6 run -e TIPO_PRUEBA=smoke --out json=artefactos/k6/crudo.json k6/escenarios/recorrido.js",
     "perf:carga": "k6 run -e TIPO_PRUEBA=carga --out json=artefactos/k6/crudo.json k6/escenarios/recorrido.js",
     "perf:estres": "k6 run -e TIPO_PRUEBA=estres --out json=artefactos/k6/crudo.json k6/escenarios/recorrido.js",

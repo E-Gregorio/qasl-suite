@@ -15,6 +15,10 @@ import { LoginPage } from "@pages/login.page";
 import { InventoryPage } from "@pages/inventory.page";
 import { CartPage } from "@pages/cart.page";
 import { CheckoutPage } from "@pages/checkout.page";
+import { InspectorDeSeguridad } from "@core/seguridad/inspector";
+import { ApiPaths } from "@api/endpoints/api.paths";
+import { IdsApi } from "@data/api.data";
+import { Rutas } from "@data/routes.data";
 
 export interface AppFixtures {
   api: ApiClient;
@@ -24,6 +28,8 @@ export interface AppFixtures {
   inventoryPage: InventoryPage;
   cartPage: CartPage;
   checkoutPage: CheckoutPage;
+  seguridadWeb: InspectorDeSeguridad;
+  seguridadApi: InspectorDeSeguridad;
 }
 
 export const test = base.extend<AppFixtures>({
@@ -47,6 +53,12 @@ export const test = base.extend<AppFixtures>({
   },
   checkoutPage: async ({ page }, use) => {
     await use(new CheckoutPage(page));
+  },
+  seguridadWeb: async ({ request }, use) => {
+    await use(new InspectorDeSeguridad(request, env.baseUrl, Rutas.login));
+  },
+  seguridadApi: async ({ request }, use) => {
+    await use(new InspectorDeSeguridad(request, env.apiBaseUrl, ApiPaths.producto(IdsApi.productoExistente)));
   },
 });
 

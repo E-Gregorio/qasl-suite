@@ -1,7 +1,7 @@
 import "@core/fixtures/test";
 import { expect } from "@playwright/test";
 import {
-  Description,
+  DescriptionHtml,
   Epic,
   Feature,
   LAYER,
@@ -19,51 +19,59 @@ import {
 import type { Fixtures } from "@core/fixtures/test";
 import { env } from "@core/config/env";
 import { IdsApi, LimitesApi, StatusEsperado, carritoNuevo } from "@data/api.data";
+import { Casos, Epica, Escenarios, Historias, Suites } from "@data/trazabilidad.data";
 
-@Epic("Tienda online")
-@Feature("API de carritos")
+@Epic(Epica)
+@Feature(Historias.carritos)
 @Owner("elyer.maldonado")
 @Layer(LAYER.API)
-@Tag("@api", "@regression")
+@Tag("@api", "@regression", "@HU-004")
 @Parameter("entorno", env.name)
-@TestSuite("API - Carritos")
+@TestSuite(Suites.carritos)
 export class CartsApiSuite {
-  @Story("Consulta de carritos")
+  @Story(Escenarios.carritos.consulta)
   @Severity(SEVERITY.CRITICAL)
   @TestCase("HU-004|TS-01|TC-01")
-  @Tag("@smoke")
-  @Description("Verifica el contrato del listado de carritos y de sus items.")
-  @Test("GET /carts devuelve carritos con sus items")
+  @Tag("@smoke", "@E1", "@BR1")
+  @DescriptionHtml(Casos.carritos["TC-01"].descripcion)
+  @Test(Casos.carritos["TC-01"].titulo)
   async listado({ cartsApi, api }: Fixtures): Promise<void> {
     const respuesta = await cartsApi.listar(LimitesApi.carritosPorPagina);
 
     await api.verificarStatus(respuesta, StatusEsperado.ok);
-    expect(respuesta.body).toHaveLength(LimitesApi.carritosPorPagina);
-    expect(respuesta.body[0].products[0]).toMatchObject({
-      productId: expect.any(Number),
+    expect(
+      respuesta.body.carts,
+      `el listado debe traer ${LimitesApi.carritosPorPagina} carritos dentro de carts`,
+    ).toHaveLength(LimitesApi.carritosPorPagina);
+    expect(respuesta.body.carts[0].products[0], "cada item debe traer id y quantity numericos").toMatchObject({
+      id: expect.any(Number),
       quantity: expect.any(Number),
     });
   }
 
-  @Story("Consulta de carritos")
+  @Story(Escenarios.carritos.consulta)
   @Severity(SEVERITY.NORMAL)
   @TestCase("HU-004|TS-01|TC-02")
-  @Test("GET /carts/:id devuelve el carrito solicitado")
+  @Tag("@E2", "@BR2")
+  @DescriptionHtml(Casos.carritos["TC-02"].descripcion)
+  @Test(Casos.carritos["TC-02"].titulo)
   async detalle({ cartsApi, api }: Fixtures): Promise<void> {
     const respuesta = await cartsApi.porId(IdsApi.carritoExistente);
 
     await api.verificarStatus(respuesta, StatusEsperado.ok);
-    expect(respuesta.body.id).toBe(IdsApi.carritoExistente);
+    expect(respuesta.body.id, "el servicio debe devolver el carrito pedido").toBe(IdsApi.carritoExistente);
   }
 
-  @Story("Alta de carritos")
+  @Story(Escenarios.carritos.alta)
   @Severity(SEVERITY.NORMAL)
   @TestCase("HU-004|TS-02|TC-03")
-  @Test("POST /carts crea un carrito con dos productos")
+  @Tag("@E3", "@BR3")
+  @DescriptionHtml(Casos.carritos["TC-03"].descripcion)
+  @Test(Casos.carritos["TC-03"].titulo)
   async alta({ cartsApi, api }: Fixtures): Promise<void> {
     const respuesta = await cartsApi.crear(carritoNuevo);
 
     await api.verificarStatus(respuesta, StatusEsperado.creado);
-    expect(respuesta.body.id).toBeDefined();
+    expect(respuesta.body.id, "la respuesta del alta debe incluir el id del carrito").toBeDefined();
   }
 }

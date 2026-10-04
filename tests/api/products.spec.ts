@@ -1,7 +1,7 @@
 import "@core/fixtures/test";
 import { expect } from "@playwright/test";
 import {
-  Description,
+  DescriptionHtml,
   Epic,
   Feature,
   LAYER,
@@ -25,29 +25,33 @@ import {
   StatusEsperado,
   productoNuevo,
 } from "@data/api.data";
+import { Casos, Epica, Escenarios, Historias, Suites } from "@data/trazabilidad.data";
 
-@Epic("Tienda online")
-@Feature("API de productos")
+@Epic(Epica)
+@Feature(Historias.productos)
 @Owner("elyer.maldonado")
 @Layer(LAYER.API)
-@Tag("@api", "@regression")
+@Tag("@api", "@regression", "@HU-003")
 @Parameter("entorno", env.name)
-@TestSuite("API - Productos")
+@TestSuite(Suites.productos)
 export class ProductsApiSuite {
-  @Story("Consulta de catalogo")
+  @Story(Escenarios.productos.consulta)
   @Severity(SEVERITY.CRITICAL)
   @TestCase("HU-003|TS-01|TC-01")
-  @Tag("@smoke")
-  @Description("Verifica el contrato del listado paginado y su tiempo de respuesta.")
-  @Test("GET /products devuelve el listado paginado")
+  @Tag("@smoke", "@E1", "@BR1")
+  @DescriptionHtml(Casos.productos["TC-01"].descripcion)
+  @Test(Casos.productos["TC-01"].titulo)
   async listado({ productsApi, api }: Fixtures): Promise<void> {
     const respuesta = await productsApi.listar(LimitesApi.productosPorPagina);
 
     await api.verificarStatus(respuesta, StatusEsperado.ok);
     await api.verificarTiempoDeRespuesta(respuesta, LimitesApi.tiempoMaximoMs);
 
-    expect(respuesta.body).toHaveLength(LimitesApi.productosPorPagina);
-    expect(respuesta.body[0]).toMatchObject({
+    expect(
+      respuesta.body.products,
+      `el listado debe traer ${LimitesApi.productosPorPagina} productos dentro de products`,
+    ).toHaveLength(LimitesApi.productosPorPagina);
+    expect(respuesta.body.products[0], "cada producto debe traer id, title, price y category").toMatchObject({
       id: expect.any(Number),
       title: expect.any(String),
       price: expect.any(Number),
@@ -55,40 +59,49 @@ export class ProductsApiSuite {
     });
   }
 
-  @Story("Consulta de catalogo")
+  @Story(Escenarios.productos.consulta)
   @Severity(SEVERITY.NORMAL)
   @TestCase("HU-003|TS-01|TC-02")
-  @Test("GET /products/:id devuelve el detalle del producto")
+  @Tag("@E2", "@BR2")
+  @DescriptionHtml(Casos.productos["TC-02"].descripcion)
+  @Test(Casos.productos["TC-02"].titulo)
   async detalle({ productsApi, api }: Fixtures): Promise<void> {
     const respuesta = await productsApi.porId(IdsApi.productoExistente);
 
     await api.verificarStatus(respuesta, StatusEsperado.ok);
-    expect(respuesta.body.id).toBe(IdsApi.productoExistente);
-    expect(respuesta.body.rating).toMatchObject({
-      rate: expect.any(Number),
-      count: expect.any(Number),
+    expect(respuesta.body.id, "el servicio debe devolver el producto pedido").toBe(IdsApi.productoExistente);
+    expect(respuesta.body, "el producto debe traer rating y stock numericos").toMatchObject({
+      rating: expect.any(Number),
+      stock: expect.any(Number),
     });
   }
 
-  @Story("Consulta de catalogo")
+  @Story(Escenarios.productos.consulta)
   @Severity(SEVERITY.MINOR)
   @TestCase("HU-003|TS-01|TC-03")
-  @Test("GET /products/categories devuelve las categorias conocidas")
+  @Tag("@E3", "@BR3")
+  @DescriptionHtml(Casos.productos["TC-03"].descripcion)
+  @Test(Casos.productos["TC-03"].titulo)
   async categorias({ productsApi, api }: Fixtures): Promise<void> {
     const respuesta = await productsApi.categorias();
 
     await api.verificarStatus(respuesta, StatusEsperado.ok);
-    expect(respuesta.body).toEqual(expect.arrayContaining([...CategoriasEsperadas]));
+    expect(
+      respuesta.body.map((categoria) => categoria.slug),
+      `las categorias deben incluir ${CategoriasEsperadas.join(" y ")}`,
+    ).toEqual(expect.arrayContaining([...CategoriasEsperadas]));
   }
 
-  @Story("Alta de productos")
+  @Story(Escenarios.productos.alta)
   @Severity(SEVERITY.NORMAL)
   @TestCase("HU-003|TS-02|TC-04")
-  @Test("POST /products crea un producto")
+  @Tag("@E4", "@BR4")
+  @DescriptionHtml(Casos.productos["TC-04"].descripcion)
+  @Test(Casos.productos["TC-04"].titulo)
   async alta({ productsApi, api }: Fixtures): Promise<void> {
     const respuesta = await productsApi.crear(productoNuevo);
 
     await api.verificarStatus(respuesta, StatusEsperado.creado);
-    expect(respuesta.body.id).toBeDefined();
+    expect(respuesta.body.id, "la respuesta del alta debe incluir el id del producto").toBeDefined();
   }
 }

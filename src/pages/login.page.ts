@@ -14,16 +14,27 @@ export class LoginPage extends BasePage {
   async iniciarSesion(usuario: string, password: string): Promise<void> {
     await this.completar(LoginLocators.username, usuario);
     await this.completar(LoginLocators.password, password);
+    await this.evidencia("Credenciales cargadas antes de ingresar");
     await this.presionar(LoginLocators.submit);
   }
 
   @Step("Verificar acceso al catalogo")
   async verificarAccesoConcedido(): Promise<void> {
-    await expect(this.page).toHaveURL(new RegExp(Rutas.inventario));
+    await expect(this.page, "el usuario debe llegar al catalogo de productos").toHaveURL(
+      new RegExp(Rutas.inventario),
+    );
+    await this.evidencia("Catalogo de productos despues del ingreso");
   }
 
   @Step('Verificar mensaje de rechazo "{0}"')
   async verificarRechazo(mensajeEsperado: string): Promise<void> {
-    await expect(this.page.locator(LoginLocators.error)).toHaveText(mensajeEsperado);
+    await expect(
+      this.page.locator(LoginLocators.error),
+      "el login debe rechazar el ingreso con el mensaje de la regla",
+    ).toHaveText(mensajeEsperado);
+    await expect(this.page, "el usuario debe permanecer en el login").not.toHaveURL(
+      new RegExp(Rutas.inventario),
+    );
+    await this.evidencia("Mensaje de rechazo en el login");
   }
 }

@@ -14,24 +14,24 @@ export const compradorValido: DatosComprador = {
 };
 
 export interface FormularioIncompleto {
-  caso: string;
+  tc: "TC-02" | "TC-03" | "TC-04";
   datos: DatosComprador;
   mensajeEsperado: string;
 }
 
 export const formulariosIncompletos: FormularioIncompleto[] = [
   {
-    caso: "sin nombre",
+    tc: "TC-02",
     datos: { ...compradorValido, nombre: "" },
     mensajeEsperado: CheckoutMessages.nombreRequerido,
   },
   {
-    caso: "sin apellido",
+    tc: "TC-03",
     datos: { ...compradorValido, apellido: "" },
     mensajeEsperado: CheckoutMessages.apellidoRequerido,
   },
   {
-    caso: "sin codigo postal",
+    tc: "TC-04",
     datos: { ...compradorValido, codigoPostal: "" },
     mensajeEsperado: CheckoutMessages.codigoPostalRequerido,
   },

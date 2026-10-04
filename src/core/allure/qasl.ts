@@ -15,10 +15,10 @@ import type { MethodMarkerDecorator } from "./types";
  *   @Cases(loginsRechazados, ...)
  *
  * El decorador hace dos cosas:
- * - En Allure agrega el link "QASL · HU-001 | TS-01 | TC-01", que abre el caso
- *   en la herramienta (template `qasl` de `playwright.config.ts`).
- * - Marca el test con la anotación `case`, que lee el reporter de QASL para
- *   publicar el resultado en el caso correcto desde el pipeline.
+ * - En Allure agrega los links al caso y a la historia en QASL Manual Testing
+ *   (templates `qasl` e `historia` de `playwright.config.ts`).
+ * - Marca el test con la anotación `allure.label.qasl_case`, que lee el
+ *   reporter de QASL para publicar el resultado en el caso correcto.
  */
 export const QASL_CASE_KEY = Symbol.for("allure.decorators.qasl-case");
 
@@ -57,12 +57,20 @@ export function refForVariant(refs: string[], index: number, variants: number, m
   return refs[index];
 }
 
-/** `HU-001|TS-02|TC-03` → clave del caso en QASL (`HU-001-TC-03`) y nombre legible. */
-export function qaslLink(ref: string) {
+/** Tipo de anotación que lleva la referencia: Allure la guarda como label `qasl_case`. */
+export const QASL_LABEL = "allure.label.qasl_case";
+
+/**
+ * `HU-001|TS-02|TC-03` → dos links de Allure que abren QASL Manual Testing:
+ * - el caso (`HU-001-TC-03`, template `qasl` de `playwright.config.ts`)
+ * - la historia (`HU-001`, template `historia`)
+ */
+export function qaslLinks(ref: string) {
   const parts = ref.split("|");
-  return {
-    url: `${parts[0]}-${parts[parts.length - 1]}`,
-    name: `QASL · ${parts.join(" | ")}`,
-    type: "qasl",
-  };
+  const historia = parts[0];
+  const caso = parts[parts.length - 1];
+  return [
+    { url: `${historia}-${caso}`, name: `Caso ${historia} · ${caso} en QASL`, type: "qasl" },
+    { url: historia, name: `Historia ${historia} en QASL`, type: "historia" },
+  ];
 }

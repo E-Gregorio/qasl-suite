@@ -2,7 +2,7 @@ import { env } from "@core/config/env";
 import { LoginMessages } from "@data/messages.data";
 
 export interface LoginAttempt {
-  caso: string;
+  tc: "TC-02" | "TC-03" | "TC-04" | "TC-05" | "TC-06";
   usuario: string;
   password: string;
   mensajeEsperado: string;
@@ -15,31 +15,31 @@ export const usuarioValido = {
 
 export const loginsRechazados: LoginAttempt[] = [
   {
-    caso: "usuario bloqueado",
+    tc: "TC-02",
     usuario: env.users.lockedOut,
     password: env.passwords.valid,
     mensajeEsperado: LoginMessages.usuarioBloqueado,
   },
   {
-    caso: "password incorrecta",
+    tc: "TC-03",
     usuario: env.users.standard,
     password: env.passwords.invalid,
     mensajeEsperado: LoginMessages.credencialesInvalidas,
   },
   {
-    caso: "usuario inexistente",
+    tc: "TC-04",
     usuario: env.users.unknown,
     password: env.passwords.valid,
     mensajeEsperado: LoginMessages.credencialesInvalidas,
   },
   {
-    caso: "usuario vacio",
+    tc: "TC-05",
     usuario: "",
     password: env.passwords.valid,
     mensajeEsperado: LoginMessages.usuarioRequerido,
   },
   {
-    caso: "password vacia",
+    tc: "TC-06",
     usuario: env.users.standard,
     password: "",
     mensajeEsperado: LoginMessages.passwordRequerida,

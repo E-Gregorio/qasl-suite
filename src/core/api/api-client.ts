@@ -13,6 +13,7 @@ export interface RequestOptions {
   headers?: Record<string, string>;
   params?: Record<string, string | number | boolean>;
   data?: unknown;
+  maxRedirects?: number;
 }
 
 export interface ApiResult<T> {
@@ -111,6 +112,7 @@ export class ApiClient {
       const respuesta = await this.request[metodo](url, {
         headers: requestHeaders,
         data: options.data as never,
+        maxRedirects: options.maxRedirects,
         failOnStatusCode: false,
       });
       const durationMs = Date.now() - inicio;

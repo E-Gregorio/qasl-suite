@@ -19,10 +19,9 @@ export default defineConfig({
         detail: true,
         suiteTitle: false,
         links: {
-          issue: { urlTemplate: env.links.issueUrlTemplate, nameTemplate: "%s" },
-          tms: { urlTemplate: env.links.tmsUrlTemplate, nameTemplate: "TC %s" },
-          // @TestCase("HU-001|TS-01|TC-01") → abre el caso en QASL Manual Testing
+          issue: { urlTemplate: `${env.qasl.webUrl}/bugs/%s?proyecto=${env.qasl.project}`, nameTemplate: "%s" },
           qasl: { urlTemplate: `${env.qasl.webUrl}/cases/%s?proyecto=${env.qasl.project}` },
+          historia: { urlTemplate: `${env.qasl.webUrl}/stories/%s?proyecto=${env.qasl.project}` },
         },
         environmentInfo: {
           Entorno: env.name,
@@ -49,6 +48,11 @@ export default defineConfig({
             matchedStatuses: ["failed"],
           },
           {
+            name: "Hallazgos de seguridad",
+            messageRegex: "(?s).*Hallazgo de seguridad:.*",
+            matchedStatuses: ["failed"],
+          },
+          {
             name: "Degradacion de performance",
             messageRegex: ".*(Tardo \\d+ ms|Timeout .* exceeded).*",
             matchedStatuses: ["failed", "broken"],
@@ -56,8 +60,6 @@ export default defineConfig({
         ],
       },
     ],
-    // QASL Manual Testing: publica cada resultado en su caso y abre el bug si falla.
-    // Se activa solo cuando el pipeline (o tu terminal) define QASL_URL y QASL_TOKEN.
     ...(env.qasl.url && env.qasl.token
       ? [
           [
@@ -65,7 +67,7 @@ export default defineConfig({
             {
               project: env.qasl.project,
               plan: env.qasl.plan,
-              environment: `${env.name} · saucedemo.com + fakestoreapi.com`,
+              environment: `${env.name} · saucedemo.com + dummyjson.com`,
             },
           ] as [string, Record<string, unknown>],
         ]
@@ -76,7 +78,6 @@ export default defineConfig({
     actionTimeout: 15_000,
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
-    video: "retain-on-failure",
   },
 
   projects: [
@@ -86,9 +87,19 @@ export default defineConfig({
       use: { baseURL: env.apiBaseUrl },
     },
     {
+      name: "seguridad",
+      testDir: "./tests/seguridad",
+    },
+    {
       name: "e2e-chromium",
       testDir: "./tests/e2e",
-      use: { ...devices["Desktop Chrome"], baseURL: env.baseUrl },
+      use: {
+        ...devices["Desktop Chrome"],
+        baseURL: env.baseUrl,
+        viewport: env.evidencia.pantalla,
+        deviceScaleFactor: 1,
+        video: { mode: env.evidencia.video, size: env.evidencia.pantalla },
+      },
     },
   ],
 });

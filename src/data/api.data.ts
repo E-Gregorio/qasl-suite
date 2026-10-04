@@ -22,21 +22,19 @@ export const IdsApi = {
   carritoExistente: 1,
 } as const;
 
-export const CategoriasEsperadas = ["electronics", "jewelery"] as const;
+export const CategoriasEsperadas = ["beauty", "laptops"] as const;
 
 export const productoNuevo: NuevoProducto = {
   title: "Notebook QASL Edition",
   price: 1299.9,
   description: "Equipo de prueba creado por la suite automatizada",
-  category: "electronics",
-  image: "https://placehold.co/600x400",
+  category: "laptops",
 };
 
 export const carritoNuevo: NuevoCarrito = {
   userId: 7,
-  date: "2026-08-23",
   products: [
-    { productId: 1, quantity: 2 },
-    { productId: 5, quantity: 1 },
+    { id: 1, quantity: 2 },
+    { id: 5, quantity: 1 },
   ],
 };

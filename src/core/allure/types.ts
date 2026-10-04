@@ -28,6 +28,8 @@ export const LAYER = {
   API: "api",
   INTEGRATION: "integration",
   UNIT: "unit",
+  PERFORMANCE: "performance",
+  SECURITY: "security",
 } as const satisfies Record<string, TestLayer>;
 
 export interface LabelEntry {

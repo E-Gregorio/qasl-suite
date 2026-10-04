@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { createHash, randomUUID } from "node:crypto";
 
 const DIRECTORIO = process.env.SALIDA_DIR || "artefactos/k6";
@@ -26,8 +26,21 @@ if (!existsSync(ORIGEN)) {
   process.exit(1);
 }
 
+const retirarAnteriores = (carpeta) => {
+  let retirados = 0;
+  for (const archivo of readdirSync(carpeta).filter((nombre) => nombre.endsWith("-result.json"))) {
+    const previo = JSON.parse(readFileSync(`${carpeta}/${archivo}`, "utf8"));
+    if (!(previo.labels ?? []).some((l) => l.name === "layer" && l.value === "performance")) continue;
+    for (const adjunto of previo.attachments ?? []) rmSync(`${carpeta}/${adjunto.source}`, { force: true });
+    rmSync(`${carpeta}/${archivo}`, { force: true });
+    retirados += 1;
+  }
+  return retirados;
+};
+
 const m = JSON.parse(readFileSync(ORIGEN, "utf8"));
 mkdirSync(RESULTADOS, { recursive: true });
+const anteriores = retirarAnteriores(RESULTADOS);
 
 const inicio = m.identificacion.inicio ? Date.parse(m.identificacion.inicio) : Date.now();
 const fin = m.identificacion.fin ? Date.parse(m.identificacion.fin) : inicio;
@@ -59,6 +72,12 @@ const descripcion = [
   "esta en el adjunto **Informe de rendimiento**.",
 ].join("\n");
 
+const descripcionHtml = descripcion
+  .split("\n\n")
+  .map((parrafo) => parrafo.replace(/\n/g, " ").replace(/\*\*(.+?)\*\*/g, "<b>$1</b>"))
+  .map((parrafo) => `<p style="margin:0 0 8px">${parrafo}</p>`)
+  .join("");
+
 let escritos = 0;
 
 for (const umbral of m.dictamen.umbrales) {
@@ -75,7 +94,7 @@ for (const umbral of m.dictamen.umbrales) {
     stage: "finished",
     start: inicio,
     stop: fin,
-    description: descripcion,
+    descriptionHtml: descripcionHtml,
     labels: [...etiquetasComunes, { name: "severity", value: umbral.severidad }],
     links: [],
     parameters: [
@@ -138,6 +157,15 @@ const entorno = [
   `Rendimiento.Herramienta=${m.identificacion.herramienta}`,
 ].join("\n");
 
-writeFileSync(`${RESULTADOS}/environment.properties`, entorno);
+const PROPIEDADES = `${RESULTADOS}/environment.properties`;
+const previas = existsSync(PROPIEDADES)
+  ? readFileSync(PROPIEDADES, "utf8")
+      .split("\n")
+      .filter((linea) => linea.trim() && !linea.startsWith("Rendimiento."))
+  : [];
+writeFileSync(PROPIEDADES, [...previas, entorno].join("\n"));
 
-console.log(`puente Allure: ${escritos} acuerdos de servicio escritos en ${RESULTADOS}`);
+console.log(
+  `puente Allure: ${escritos} acuerdos de servicio escritos en ${RESULTADOS}` +
+    (anteriores ? ` · ${anteriores} de la corrida anterior retirados` : ""),
+);

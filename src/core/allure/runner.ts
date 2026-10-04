@@ -10,7 +10,7 @@ import {
 } from "allure-js-commons";
 import { CASE_KEY, HOOK_KEY, normalizeLabels, resolveMeta } from "./metadata";
 import { getTest } from "./test-registry";
-import { qaslLink, readQaslRefs, refForVariant } from "./qasl";
+import { QASL_LABEL, qaslLinks, readQaslRefs, refForVariant } from "./qasl";
 import type {
   AllureMeta,
   MethodMarkerDecorator,
@@ -376,7 +376,7 @@ function registerCase(test: any, ctor: Function, def: TestCaseDef, getInstance: 
       if (def.options.timeout !== undefined) testInfo.setTimeout(def.options.timeout);
 
       await applyMeta(meta, variant.data, hasData);
-      if (qaslRef) await setLinks(qaslLink(qaslRef));
+      if (qaslRef) await setLinks(...qaslLinks(qaslRef));
 
       const instance = getInstance();
       return hasData
@@ -388,8 +388,10 @@ function registerCase(test: any, ctor: Function, def: TestCaseDef, getInstance: 
     if (pwTags.length) details.tag = pwTags;
     const annotations: { type: string; description: string }[] = [];
     if (def.options.reason) annotations.push({ type: def.options.mode ?? "note", description: def.options.reason });
-    // El reporter de QASL publica el resultado en el caso que indica esta anotación
-    if (qaslRef) annotations.push({ type: "case", description: qaslRef });
+    // El reporter de QASL publica el resultado en el caso que indica esta
+    // anotación. Se declara como label de Allure para que no aparezca como un
+    // paso suelto dentro del cuerpo del caso.
+    if (qaslRef) annotations.push({ type: QASL_LABEL, description: qaslRef });
     if (annotations.length) details.annotation = annotations;
 
     const declare = (): void => {

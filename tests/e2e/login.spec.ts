@@ -2,7 +2,7 @@ import "@core/fixtures/test";
 import {
   BeforeEach,
   Cases,
-  Description,
+  DescriptionHtml,
   Epic,
   Feature,
   LAYER,
@@ -15,36 +15,38 @@ import {
   Test,
   TestSuite,
   TestCase,
+  allureDescriptionHtml,
 } from "@core/allure";
 import type { Fixtures } from "@core/fixtures/test";
 import { loginsRechazados, usuarioValido, type LoginAttempt } from "@data/users.data";
 import { InventoryMessages } from "@data/messages.data";
+import { Casos, Epica, Escenarios, Historias, Suites } from "@data/trazabilidad.data";
 
-@Epic("Tienda online")
-@Feature("Autenticacion")
+@Epic(Epica)
+@Feature(Historias.login)
 @Owner("elyer.maldonado")
 @Layer(LAYER.E2E)
-@Tag("@e2e", "@regression")
-@TestSuite("Login de usuarios")
+@Tag("@e2e", "@regression", "@HU-001")
+@TestSuite(Suites.login)
 export class LoginSuite {
   @BeforeEach()
   async abrirLogin({ loginPage }: Fixtures): Promise<void> {
     await loginPage.abrirLogin();
   }
 
-  @Story("Acceso concedido")
+  @Story(Escenarios.login.concedido)
   @Severity(SEVERITY.BLOCKER)
   @TestCase("HU-001|TS-01|TC-01")
-  @Tag("@smoke")
-  @Description("Un usuario habilitado accede al catalogo de productos.")
-  @Test("el usuario estandar accede al catalogo")
+  @Tag("@smoke", "@E1", "@BR1")
+  @DescriptionHtml(Casos.login["TC-01"].descripcion)
+  @Test(Casos.login["TC-01"].titulo)
   async accesoConcedido({ loginPage, inventoryPage }: Fixtures): Promise<void> {
     await loginPage.iniciarSesion(usuarioValido.usuario, usuarioValido.password);
     await loginPage.verificarAccesoConcedido();
     await inventoryPage.verificarTitulo(InventoryMessages.titulo);
   }
 
-  @Story("Acceso denegado")
+  @Story(Escenarios.login.denegado)
   @Severity(SEVERITY.CRITICAL)
   @TestCase(
     "HU-001|TS-02|TC-02",
@@ -53,9 +55,11 @@ export class LoginSuite {
     "HU-001|TS-02|TC-05",
     "HU-001|TS-02|TC-06",
   )
-  @Cases(loginsRechazados, (intento) => `rechaza el login: ${intento.caso}`)
+  @Tag("@BR2", "@BR3", "@BR4")
+  @Cases(loginsRechazados, (intento) => Casos.login[intento.tc].titulo)
   @Test()
   async accesoDenegado(intento: LoginAttempt, { loginPage }: Fixtures): Promise<void> {
+    await allureDescriptionHtml(Casos.login[intento.tc].descripcion);
     await loginPage.iniciarSesion(intento.usuario, intento.password);
     await loginPage.verificarRechazo(intento.mensajeEsperado);
   }

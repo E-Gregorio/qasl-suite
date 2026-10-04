@@ -1,4 +1,5 @@
 import type { Page } from "@playwright/test";
+import { ContentType, attachment } from "@core/allure";
 
 export abstract class BasePage {
   constructor(protected readonly page: Page) {}
@@ -19,7 +20,7 @@ export abstract class BasePage {
     return (await this.page.textContent(selector))?.trim() ?? "";
   }
 
-  async capturar(): Promise<Buffer> {
-    return this.page.screenshot({ fullPage: true });
+  protected async evidencia(nombre: string): Promise<void> {
+    await attachment(nombre, await this.page.screenshot({ fullPage: false }), ContentType.PNG);
   }
 }

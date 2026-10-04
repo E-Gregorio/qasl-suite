@@ -1,23 +1,5 @@
-/**
- * Reporter de Playwright para QASL Manual Testing.
- *
- * Asocia cada test con su caso de prueba y, al terminar la corrida,
- * publica los resultados en la API. Si un test falla, sube su evidencia (captura, video, traza)
- * y la plataforma abre el bug solo. Detecta GitLab CI, GitHub Actions y Azure Pipelines.
- *
- * El caso se indica con la referencia de NEXUS, de cualquiera de estas formas:
- *   test('…', { tag: '@HU-002|TS-03|TC-09' }, …)                         tag
- *   test('…', { annotation: { type: 'case', description: 'HU-002|TS-03|TC-09' } }, …)   anotación
- *   un caso creado a mano en la plataforma: tag @TC-0001
- *
- * Uso en playwright.config.ts:
- *   reporter: [['list'], ["./src/core/qasl/qasl-reporter.ts", { project: "TIENDA", plan: "PLAN-01" }]]
- *
- * Variables de entorno (tienen prioridad sobre las opciones):
- *   QASL_URL, QASL_TOKEN, QASL_PROJECT, QASL_PLAN, QASL_ENVIRONMENT
- */
 import type { FullResult, Reporter, TestCase, TestResult } from '@playwright/test/reporter';
-import { readFile, stat } from 'node:fs/promises';
+import { readFile, readdir, rm, stat, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 
 type Outcome = 'pass' | 'fail' | 'blocked' | 'not_run';
@@ -28,11 +10,8 @@ interface Options {
   project?: string;
   plan?: string;
   environment?: string;
-  /** Qué tags representan un caso. Por defecto la referencia NEXUS (@HU-002|TS-03|TC-09) o @TC-… */
   casePattern?: RegExp;
-  /** Subir evidencia: solo de los tests que fallan (por defecto), siempre o nunca. */
   uploadAttachments?: 'on-failure' | 'always' | 'never';
-  /** Si es true, un error al publicar hace fallar el job. */
   strict?: boolean;
 }
 
@@ -47,6 +26,9 @@ interface Collected {
 
 const ANSI = /\u001b\[[0-9;]*m/g;
 const MAX_FILE_MB = 50;
+export const RUN_FILE = '.qasl-run.json';
+const ALLURE_RESULTS = process.env.ALLURE_RESULTS_DIR ?? 'allure-results';
+const QASL_LABEL = 'qasl_case';
 
 function pipelineInfo() {
   const env = process.env;
@@ -69,11 +51,6 @@ function pipelineInfo() {
   return { id: `local-${stamp}`, branch: env.QASL_BRANCH ?? 'local', commit: env.QASL_COMMIT };
 }
 
-/**
- * "login.spec.ts › Login de usuarios › rechaza el login: password vacia".
- * Se arma con el título y no con test.location: las suites declaradas con decoradores
- * registran los tests desde el runner, y la ubicación apuntaría a ese archivo.
- */
 function testName(test: TestCase): string {
   const [, , file, ...rest] = test.titlePath();
   return [path.basename(file ?? test.location.file), ...rest].filter(Boolean).join(' › ');
@@ -104,7 +81,7 @@ export default class QaslReporter implements Reporter {
   private caseKeys(test: TestCase): string[] {
     const tags = [...(test.tags ?? []), ...(test.title.match(/@[\w|-]+/g) ?? [])];
     const fromTags = tags.map((t) => t.match(this.opts.casePattern)?.[1]);
-    const fromAnnotations = test.annotations.filter((a) => a.type === 'case' || a.type === 'qasl-case').map((a) => a.description?.replace(/\s+/g, ''));
+    const fromAnnotations = test.annotations.filter((a) => a.type === 'allure.label.qasl_case' || a.type === 'case').map((a) => a.description?.replace(/\s+/g, ''));
     return [...new Set([...fromTags, ...fromAnnotations].filter(Boolean).map((k) => k!.toUpperCase()))];
   }
 
@@ -121,7 +98,6 @@ export default class QaslReporter implements Reporter {
       test: testName(test),
       files: upload ? result.attachments.filter((a) => a.path).map((a) => ({ name: path.basename(a.path!), path: a.path!, contentType: a.contentType })) : [],
     };
-    // Con reintentos, cuenta el último intento del test
     for (const caseKey of keys) this.results.set(`${test.id}|${caseKey}`, [{ ...entry, caseKey }]);
   }
 
@@ -138,6 +114,27 @@ export default class QaslReporter implements Reporter {
     } catch {
       return null;
     }
+  }
+
+  private async linkBugsInAllure(bugs: Record<string, string>) {
+    if (!Object.keys(bugs).length) return;
+    const files = await readdir(ALLURE_RESULTS).catch(() => [] as string[]);
+    for (const file of files.filter((f) => f.endsWith('-result.json'))) {
+      const ruta = path.join(ALLURE_RESULTS, file);
+      const result = JSON.parse(await readFile(ruta, 'utf8'));
+      const ref = (result.labels ?? []).find((l: { name: string }) => l.name === QASL_LABEL)?.value?.replace(/\s+/g, '').toUpperCase();
+      const bug = ref ? bugs[ref] : undefined;
+      if (!bug || result.status === 'passed') continue;
+      if ((result.links ?? []).some((l: { url: string }) => l.url?.includes(bug))) continue;
+      const web = process.env.QASL_WEB_URL;
+      const url = web ? `${web}/bugs/${bug}?proyecto=${encodeURIComponent(this.opts.project!)}` : bug;
+      result.links = [...(result.links ?? []), { type: 'issue', url, name: `${bug} en QASL` }];
+      await writeFile(ruta, JSON.stringify(result));
+    }
+  }
+
+  async onBegin() {
+    await rm(RUN_FILE, { force: true });
   }
 
   async onEnd(_result: FullResult) {
@@ -168,9 +165,16 @@ export default class QaslReporter implements Reporter {
       if (!res.ok) throw new Error(body.error ?? `La API respondió ${res.status}`);
 
       const d = body.defects ?? {};
+      const bugs: Record<string, string> = body.by_case ?? {};
+      await writeFile(RUN_FILE, JSON.stringify({
+        project, run: body.run, pipeline: pipeline.id, bugs,
+        created: d.created ?? [], updated: d.updated ?? [], reopened: d.reopened ?? [],
+      }));
+      await this.linkBugsInAllure(bugs);
       console.log(`\n[QASL] Publicado en ${project} como ${body.run} (pipeline ${pipeline.id}): ${body.results} casos.`);
       if (d.created?.length) console.log(`[QASL] Bugs nuevos: ${d.created.join(', ')}`);
       if (d.updated?.length) console.log(`[QASL] Bugs que siguen fallando: ${d.updated.join(', ')}`);
+      if (d.reopened?.length) console.log(`[QASL] Bugs reabiertos por regresion: ${d.reopened.join(', ')}`);
       if (d.closed?.length) console.log(`[QASL] Bugs cerrados por el pipeline: ${d.closed.join(', ')}`);
       if (d.ready_for_retest?.length) console.log(`[QASL] Bugs listos para retest: ${d.ready_for_retest.join(', ')}`);
       if (body.unknown_cases?.length) console.log(`[QASL] Tags sin caso en QASL: ${body.unknown_cases.join(', ')}`);

@@ -1,14 +1,14 @@
 import { Step } from "@core/allure";
 import type { ApiClient, ApiResult } from "@core/api/api-client";
 import { ApiPaths } from "@api/endpoints/api.paths";
-import type { NuevoProducto, Product } from "@api/models/product.model";
+import type { Category, NuevoProducto, Product, ProductList } from "@api/models/product.model";
 
 export class ProductsApi {
   constructor(private readonly api: ApiClient) {}
 
   @Step("Listar productos (limite {0})")
-  async listar(limite: number): Promise<ApiResult<Product[]>> {
-    return this.api.get<Product[]>(ApiPaths.productos, { params: { limit: limite } });
+  async listar(limite: number): Promise<ApiResult<ProductList>> {
+    return this.api.get<ProductList>(ApiPaths.productos, { params: { limit: limite } });
   }
 
   @Step("Obtener el producto {0}")
@@ -17,17 +17,17 @@ export class ProductsApi {
   }
 
   @Step("Listar las categorias")
-  async categorias(): Promise<ApiResult<string[]>> {
-    return this.api.get<string[]>(ApiPaths.categorias);
+  async categorias(): Promise<ApiResult<Category[]>> {
+    return this.api.get<Category[]>(ApiPaths.categorias);
   }
 
   @Step('Listar productos de la categoria "{0}"')
-  async porCategoria(categoria: string): Promise<ApiResult<Product[]>> {
-    return this.api.get<Product[]>(ApiPaths.productosPorCategoria(categoria));
+  async porCategoria(categoria: string): Promise<ApiResult<ProductList>> {
+    return this.api.get<ProductList>(ApiPaths.productosPorCategoria(categoria));
   }
 
   @Step('Crear el producto "{0.title}"')
   async crear(producto: NuevoProducto): Promise<ApiResult<Product>> {
-    return this.api.post<Product>(ApiPaths.productos, { data: producto });
+    return this.api.post<Product>(ApiPaths.altaProducto, { data: producto });
   }
 }

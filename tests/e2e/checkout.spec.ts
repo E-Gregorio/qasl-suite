@@ -2,10 +2,9 @@ import "@core/fixtures/test";
 import {
   BeforeEach,
   Cases,
-  Description,
+  DescriptionHtml,
   Epic,
   Feature,
-  Issue,
   LAYER,
   Layer,
   Owner,
@@ -16,6 +15,7 @@ import {
   Test,
   TestSuite,
   TestCase,
+  allureDescriptionHtml,
 } from "@core/allure";
 import type { Fixtures } from "@core/fixtures/test";
 import { usuarioValido } from "@data/users.data";
@@ -26,13 +26,14 @@ import {
   type FormularioIncompleto,
 } from "@data/checkout.data";
 import { CartMessages, CheckoutMessages, InventoryMessages } from "@data/messages.data";
+import { Casos, Epica, Escenarios, Historias, Suites } from "@data/trazabilidad.data";
 
-@Epic("Tienda online")
-@Feature("Compra")
+@Epic(Epica)
+@Feature(Historias.compra)
 @Owner("elyer.maldonado")
 @Layer(LAYER.E2E)
-@Tag("@e2e", "@regression")
-@TestSuite("Flujo de compra")
+@Tag("@e2e", "@regression", "@HU-002")
+@TestSuite(Suites.compra)
 export class CheckoutSuite {
   @BeforeEach()
   async iniciarSesion({ loginPage, inventoryPage }: Fixtures): Promise<void> {
@@ -41,17 +42,13 @@ export class CheckoutSuite {
     await inventoryPage.verificarTitulo(InventoryMessages.titulo);
   }
 
-  @Story("Compra completa")
+  @Story(Escenarios.compra.completa)
   @Severity(SEVERITY.BLOCKER)
   @TestCase("HU-002|TS-01|TC-01")
-  @Tag("@smoke")
-  @Description("Recorrido completo: catalogo, carrito, datos del comprador, resumen y confirmacion.")
-  @Test("el usuario completa una compra de dos productos")
-  async compraCompleta({
-    inventoryPage,
-    cartPage,
-    checkoutPage,
-  }: Fixtures): Promise<void> {
+  @Tag("@smoke", "@E1", "@BR1", "@BR2", "@BR4")
+  @DescriptionHtml(Casos.compra["TC-01"].descripcion)
+  @Test(Casos.compra["TC-01"].titulo)
+  async compraCompleta({ inventoryPage, cartPage, checkoutPage }: Fixtures): Promise<void> {
     for (const producto of productosDelPedido) {
       await inventoryPage.agregarAlCarrito(producto);
     }
@@ -69,20 +66,17 @@ export class CheckoutSuite {
     await checkoutPage.verificarConfirmacion(CheckoutMessages.compraFinalizada);
   }
 
-  @Story("Validacion del formulario")
+  @Story(Escenarios.compra.formulario)
   @Severity(SEVERITY.NORMAL)
-  @TestCase(
-    "HU-002|TS-02|TC-02",
-    "HU-002|TS-02|TC-03",
-    "HU-002|TS-02|TC-04",
-  )
-  @Issue("BUG-4471")
-  @Cases(formulariosIncompletos, (formulario) => `rechaza el checkout ${formulario.caso}`)
+  @TestCase("HU-002|TS-02|TC-02", "HU-002|TS-02|TC-03", "HU-002|TS-02|TC-04")
+  @Tag("@BR3")
+  @Cases(formulariosIncompletos, (formulario) => Casos.compra[formulario.tc].titulo)
   @Test()
   async formularioIncompleto(
     formulario: FormularioIncompleto,
     { inventoryPage, cartPage, checkoutPage }: Fixtures,
   ): Promise<void> {
+    await allureDescriptionHtml(Casos.compra[formulario.tc].descripcion);
     await inventoryPage.agregarAlCarrito(productosDelPedido[0]);
     await inventoryPage.abrirCarrito();
     await cartPage.continuarAlCheckout();
